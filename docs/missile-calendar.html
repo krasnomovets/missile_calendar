@@ -5,10 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Missile Attack Calendar</title>
   
-  <!-- React Dependencies -->
+  <!-- Dependencies -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.8/babel.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
   <style>
     .calendar-container {
@@ -67,38 +68,87 @@
       height: 100%;
       background-color: #f5f5f5;
     }
+
+    .loading {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 200px;
+      color: #666;
+    }
+    
+    .error {
+      color: #dc2626;
+      text-align: center;
+      padding: 2rem;
+    }
   </style>
 </head>
 <body>
   <div id="missile-calendar"></div>
 
   <script type="text/babel">
-    // Mock data
-    const mockData = [
-      { date: '2024-01-03', launched: 15, type: 'Missile' },
-      { date: '2024-01-06', launched: 80, type: 'Missile' },
-      { date: '2024-01-08', launched: 122, type: 'Missile' },
-      { date: '2024-01-15', launched: 40, type: 'Missile' },
-      { date: '2024-03-22', launched: 88, type: 'Missile' },
-      { date: '2024-03-24', launched: 45, type: 'Missile' },
-      { date: '2024-02-07', launched: 35, type: 'Missile' },
-      { date: '2024-04-11', launched: 52, type: 'Missile' },
-      { date: '2024-05-03', launched: 29, type: 'Missile' },
-      { date: '2024-06-16', launched: 67, type: 'Missile' },
-      { date: '2024-11-17', launched: 120, type: 'Missile' },
-      { date: '2024-11-28', launched: 91, type: 'Missile' },
-      { date: '2024-12-29', launched: 122, type: 'Missile' },
-    ];
-
-    // Calendar Component
     const CalendarHeatmap = () => {
       const [windowWidth, setWindowWidth] = React.useState(window.innerWidth);
+      const [data, setData] = React.useState(null);
+      const [loading, setLoading] = React.useState(true);
+      const [error, setError] = React.useState(null);
       
+      // Handle window resize
       React.useEffect(() => {
         const handleResize = () => setWindowWidth(window.innerWidth);
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
       }, []);
+
+      // Fetch data from Google Sheets
+      React.useEffect(() => {
+        const fetchData = async () => {
+          try {
+            setLoading(true);
+            // Replace with your published Google Sheet CSV URL
+            const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vREloeCErwvCs6uJ4RlQGtstC7vPd8u9qlsvE0j7a3Y83JoK7yE_5vMLx4VcdAsRQ_AVfXglj7NXU0c/pub?gid=243376231&single=true&output=csv';
+            
+            // Fetch and parse CSV
+            const response = await fetch(SHEET_URL);
+            const csvText = await response.text();
+            
+            Papa.parse(csvText, {
+              header: true,
+              dynamicTyping: true,
+              complete: (results) => {
+                // Transform data into required format
+                const attacks = results.data
+                  .filter(row => row.date) // Remove empty rows
+                  .map(row => ({
+                    date: row.date,
+                    launched: row.launched,
+                    type: row.attack_type
+                  }));
+                
+                setData(attacks);
+                setLoading(false);
+              },
+              error: (error) => {
+                throw new Error('Failed to parse CSV: ' + error.message);
+              }
+            });
+          } catch (err) {
+            setError('Failed to load data. Please try again later.');
+            setLoading(false);
+          }
+        };
+
+        fetchData();
+      }, []);
+
+      if (loading) {
+        return <div className="loading">Loading calendar data...</div>;
+      }
+
+      if (error) {
+        return <div className="error">{error}</div>;
+      }
 
       const monthsPerRow = windowWidth < 400 ? 3 : 4;
 
@@ -138,7 +188,7 @@
                     (_, i) => {
                       const date = new Date(2024, monthIndex, i + 1);
                       const dateStr = date.toISOString().split('T')[0];
-                      const dayData = mockData.find(d => d.date === dateStr);
+                      const dayData = data.find(d => d.date === dateStr);
                       const intensity = dayData ? getIntensity(dayData.launched) : 0;
                       
                       return (
