@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Ukraine Attacks Chart</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- D3 (version 7 example) -->
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+
+  <style>
+    /* === Original or existing styling preserved === */
+    body {
+      font-family: "Helvetica Neue", Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #ffffff;
+    }
+
+    /* Chart container */
+    #chart {
+      max-width: 900px;
+      margin: 30px auto;
+      position: relative;
+    }
+
+    /* Axis lines, ticks, etc. */
+    .axis path,
+    .axis line {
+      fill: none;
+      stroke: #ccc;
+      shape-rendering: crispEdges;
+    }
+
+    .axis text {
+      font-size: 12px;
+      fill: #333;
+    }
+
+    /* Bar styling (adjust color or hover if you like) */
+    .bar {
+      fill: #69b3a2;
+    }
+
+    /* Example transitions (if you had them originally) */
+    .bar:hover {
+      fill: #457f6a;
+    }
+
+    /* Dropdown container in top-left corner */
+    .dropdown-container {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 999;
+      background: rgba(255, 255, 255, 0.95);
+      padding: 4px 8px;
+      border-radius: 4px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.15);
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- Dropdown to select the attack type -->
+<div class="dropdown-container">
+  <label for="attackTypeSelect"><strong>Attack Type:</strong> </label>
+  <select id="attackTypeSelect">
+    <option value="missile">Missiles only</option>
+    <option value="shahed">Shaheds only</option>
+    <option value="both" selected>Missiles + Shaheds</option>
+  </select>
+</div>
+
+<!-- Main chart container -->
+<div id="chart"></div>
+
+<script>
+/* 
+  =========================
+   1) SETUP & GLOBALS
+  =========================
+*/
+const margin = { top: 40, right: 30, bottom: 70, left: 60 },
+      width  = 800 - margin.left - margin.right,
+      height = 400 - margin.top - margin.bottom;
+
+// We will store the raw CSV data once loaded:
+let originalData = [];
+
+// Replace this with your actual published Google Sheet link or other CSV endpoint
+const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vREloeCErwvCs6uJ4RlQGtstC7vPd8u9qlsvE0j7a3Y83JoK7yE_5vMLx4VcdAsRQ_AVfXglj7NXU0c/pub?gid=243376231&single=true&output=csv";
+
+/* 
+  =========================
+   2) FETCH CSV DATA
+  =========================
+*/
+d3.csv(csvUrl).then(data => {
+
+  // Check a sample row in console
+  console.log("Raw CSV Data:", data[0]);
+
+  // If your numeric column is named something else (e.g., "count_of_attacks"),
+  // parse it here. For example:
+  data.forEach(d => {
+    // Convert the numeric field
+    d.count = +d.count;
+
+    // If needed, parse the date from a string to a date object
+    // let parseDate = d3.timeParse("%Y-%m-%d");
+    // d.date = parseDate(d.date);
+  });
+
+  // Store all data globally
+  originalData = data;
+
+  // Initial draw -> "both" (Missiles + Shaheds combined)
+  updateChart("both");
+
+}).catch(err => {
+  console.error("Error loading CSV data:", err);
+});
+
+
+/* 
+  =========================
+   3) PREPARE/FILTER DATA
+  =========================
+*/
+function prepareData(attackType) {
+  console.log("[prepareData] attackType:", attackType);
+
+  if (attackType === "missile") {
+    // Filter only "Missile"
+    return originalData.filter(d => d.attack_type === "Missile");
+
+  } else if (attackType === "shahed") {
+    // Filter only "Shahed"
+    return originalData.filter(d => d.attack_type === "Shahed");
+
+  } else {
+    // Combine Missiles + Shaheds by date
+    // 1) Filter to only those two types
+    const filtered = originalData.filter(d =>
+      d.attack_type === "Missile" || d.attack_type === "Shahed"
+    );
+
+    // 2) Group by date and sum the count
+    const grouped = d3.group(filtered, d => d.date);
+    
+    const combinedArray = [];
+    grouped.forEach((rows, date) => {
+      const total = d3.sum(rows, r => r.count);
+      combinedArray.push({
+        date: date,
+        attack_type: "Both",
+        count: total
+      });
+    });
+
+    return combinedArray;
+  }
+}
+
+
+/* 
+  =========================
+   4) DRAW/UPDATE CHART
+  =========================
+*/
+function updateChart(attackType) {
+  console.log("[updateChart] Redrawing chart for:", attackType);
+
+  // 4.1) Prepare the data for this attackType
+  const chartData = prepareData(attackType);
+  console.log("Chart data sample:", chartData.slice(0,5));
+
+  // 4.2) Clear existing chart elements
+  d3.select("#chart").selectAll("*").remove();
+
+  // 4.3) Create an SVG container
+  const svg = d3.select("#chart")
+    .append("svg")
+    .attr("width",  width  + margin.left + margin.right)
+    .attr("height", height + margin.top  + margin.bottom)
+    .append("g")
+    .attr("transform", `translate(${margin.left},${margin.top})`);
+
+  // 4.4) Define scales
+  //    If your `date` is a string label (e.g., "2022-03-10"), you can use scaleBand.
+  //    If it's a real Date object, use d3.scaleTime() and adapt the axis accordingly.
+  const x = d3.scaleBand()
+    .domain(chartData.map(d => d.date)) 
+    .range([0, width])
+    .padding(0.2);
+
+  const y = d3.scaleLinear()
+    .domain([0, d3.max(chartData, d => d.count) || 0])
+    .nice()
+    .range([height, 0]);
+
+  // 4.5) Draw X Axis
+  svg.append("g")
+    .attr("class", "axis x-axis")
+    .attr("transform", `translate(0, ${height})`)
+    .call(d3.axisBottom(x))
+    .selectAll("text") 
+      .style("text-anchor", "end")
+      .attr("transform", "rotate(-45)")
+      .attr("dx", "-0.8em")
+      .attr("dy", "0.15em");
+
+  // 4.6) Draw Y Axis
+  svg.append("g")
+    .attr("class", "axis y-axis")
+    .call(d3.axisLeft(y));
+
+  // 4.7) Draw bars (if your chart is a bar chart)
+  svg.selectAll(".bar")
+    .data(chartData)
+    .enter()
+    .append("rect")
+      .attr("class", "bar")
+      .attr("x", d => x(d.date))
+      .attr("y", d => y(d.count))
+      .attr("width", x.bandwidth())
+      .attr("height", d => height - y(d.count));
+
+  // 4.8) (Optional) Add chart title or legend
+  svg.append("text")
+    .attr("x", width / 2)
+    .attr("y", -10)
+    .attr("text-anchor", "middle")
+    .style("font-weight", "bold")
+    .text(attackType === "both" ? "Missiles + Shaheds" : attackType);
+}
+
+
+/* 
+  =========================
+   5) LISTEN TO DROPDOWN
+  =========================
+*/
+d3.select("#attackTypeSelect").on("change", function(event) {
+  const selectedValue = event.target.value; // 'missile' | 'shahed' | 'both'
+  updateChart(selectedValue);
+});
+</script>
+
+</body>
+</html>
