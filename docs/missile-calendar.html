@@ -120,23 +120,27 @@ React.useEffect(() => {
       console.log('CSV preview:', csvText.slice(0, 100));
       
       Papa.parse(csvText, {
-        header: true,
-        dynamicTyping: true,
-        complete: (results) => {
-          // Log parsed results
-          console.log('Parsed data:', results);
-          const attacks = results.data
-            .filter(row => row.date)
-            .map(row => ({
-              date: row.date,
-              launched: row.launched,
-              type: row.attack_type
-            }));
-          
-          console.log('Processed attacks:', attacks);
-          setData(attacks);
-          setLoading(false);
-        },
+  header: true,
+  dynamicTyping: true,
+  complete: (results) => {
+    // Transform data into required format, including date conversion
+    const attacks = results.data
+      .filter(row => row.date)
+      .map(row => {
+        // Convert MM/DD/YYYY to YYYY-MM-DD
+        const [month, day, year] = row.date.split('/');
+        const formattedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+        
+        return {
+          date: formattedDate,
+          launched: row.launched,
+          type: row.attack_type
+        };
+      });
+    
+    setData(attacks);
+    setLoading(false);
+  },
         error: (error) => {
           console.error('CSV parsing error:', error);
           throw new Error('Failed to parse CSV: ' + error.message);
