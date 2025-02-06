@@ -155,6 +155,19 @@
       pointer-events: none;
     }
 
+    .day-square:nth-child(7n) .tooltip,
+    .day-square:nth-child(7n-1) .tooltip {
+      left: auto;
+      right: 0;
+      transform: none;
+    }
+
+    .day-square:nth-child(7n-6) .tooltip,
+    .day-square:nth-child(7n-5) .tooltip {
+      left: 0;
+      transform: none;
+    }
+
     .tooltip-date {
       font-weight: 600;
       margin-bottom: 8px;
@@ -173,27 +186,39 @@
     }
 
     .calendar-footer {
-  margin-top: 24px;
-  border-top: 1px solid #eee;
-  padding-top: 12px;
+      margin-top: 24px;
+      border-top: 1px solid #eee;
+      padding-top: 12px;
     }
 
     .calendar-description {
-      font-size: 13px;
+      font-size: 14px;
+      line-height: 1.4;
       margin-bottom: 16px;
+      color: #111;
     }
 
     .calendar-meta {
       font-size: 12px;
       color: #666;
-      display: flex;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 4px 8px;
       justify-content: space-between;
       align-items: center;
+    }
+
+    .calendar-meta-label {
+      color: #666;
     }
 
     .calendar-source {
       display: flex;
       gap: 4px;
+    }
+
+    .calendar-meta-value {
+      color: #666;
     }
 
     .calendar-source-text {
@@ -379,14 +404,16 @@
           </div>
             <div className="calendar-footer">
             <div className="calendar-description">
-              Kalenderen viser russiske angrep på Ukraina fra oktober 2022 til i dag. Jo mørkere fargen er, jo flere våpen ble skutt av russiske styrker mot Ukraina.
+              Kalenderen viser russiske angrep på Ukraina fra oktober 2022 til i dag. 
+              Jo mørkere fargen er, jo flere våpen ble skutt av russiske styrker mot Ukraina.
             </div>
             <div className="calendar-meta">
-              <div className="calendar-source">
-                <span className="calendar-source-text">Grafikk: Pavlo Krasnomovets • Kilde:</span>
-                <span>Det ukrainske luftforsvaret. Data samlet av Petro Ivanjuk.</span>
-                </div>
-              
+              <div className="calendar-meta-label">Grafikk:</div>
+              <div className="calendar-meta-value">Pavlo Krasnomovets</div>
+              <div className="calendar-meta-label">Kilde:</div>
+              <div className="calendar-meta-value">
+                Det ukrainske luftforsvaret. Data samlet av Petro Ivanjuk.
+              </div>
             </div>
           </div>
         </div>
