@@ -26,6 +26,23 @@
       padding: 10px;
     }
 
+    .calendar-header-text {
+      margin-bottom: 20px;
+    }
+
+    .calendar-title {
+      font-size: 21px;
+      font-weight: bold;
+      font-family: Grafik, sans-serif;
+      margin-bottom: 8px;
+    }
+
+    .calendar-subtext {
+      font-size: 13px;
+      line-height: 17px;
+      color: #666;
+    }
+
     .filter-select {
       padding: 4px 8px;
       border: 1px solid #ccc;
@@ -64,6 +81,11 @@
       color: #666;
       cursor: pointer;
       padding: 4px 8px;
+    }
+    
+    .year-button:disabled {
+      color: #ccc;
+      cursor: not-allowed;
     }
 
     .year-button:hover {
@@ -246,6 +268,8 @@
       const [error, setError] = React.useState(null);
       const [filterType, setFilterType] = React.useState('Missile');
       const [selectedYear, setSelectedYear] = React.useState(2024);
+      const MIN_YEAR = 2022;
+      const MAX_YEAR = new Date().getFullYear();
 
       React.useEffect(() => {
         const handleResize = () => setWindowWidth(window.innerWidth);
@@ -321,6 +345,12 @@
 
       return (
         <div className="calendar-container">
+          <div className="calendar-header-text">
+          <div className="calendar-title">Missilangrep i rute</div>
+          <div className="calendar-subtext">
+            Kalenderen viser russiske missil- og droneangrep mot Ukraina fra oktober 2022 til i dag. 
+              </div>
+        </div>
           <div className="calendar-header">
             <select 
               value={filterType}
@@ -340,9 +370,19 @@
           </div>
 
           <div className="year-selector">
-            <button onClick={() => setSelectedYear(y => y - 1)} className="year-button">←</button>
+            <button onClick={() => setSelectedYear(y => y - 1)} 
+              className="year-button"
+              disabled={selectedYear <=MIN_YEAR}
+              >
+              ←
+              </button>
             <span className="year-display">{selectedYear}</span>
-            <button onClick={() => setSelectedYear(y => y + 1)} className="year-button">→</button>
+            <button onClick={() => setSelectedYear(y => y + 1)}
+              className="year-button"
+              disabled={selectedYear >= MAX_YEAR}
+              >
+              →
+              </button>
           </div>
 
           <div className="months-grid">
@@ -403,10 +443,13 @@
             ))}
           </div>
             <div className="calendar-footer">
-            <div className="calendar-description">
+            
+             {/* 
+              <div className="calendar-description">
               Kalenderen viser russiske angrep på Ukraina fra oktober 2022 til i dag. 
               Jo mørkere fargen er, jo flere våpen ble skutt av russiske styrker mot Ukraina.
             </div>
+            */}
             <div className="calendar-meta">
               <div className="calendar-meta-label">Grafikk:</div>
               <div className="calendar-meta-value">Pavlo Krasnomovets</div>
