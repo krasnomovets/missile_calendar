@@ -255,19 +255,181 @@
     .calendar-source-link:hover {
       text-decoration: underline;
     }
+    
+    .embed-button {
+      position: static;
+      top: auto;
+      right: auto;
+      margin-top: 16px;
+      padding: 8px 12px;
+      background: #f5f5f5;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.2s ease;
+    }
+
+    .embed-button:hover {
+      background: #eee;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .embed-modal {
+      background: white;
+      padding: 24px;
+      border-radius: 8px;
+      box-shadow: 0 2px 20px rgba(0,0,0,0.15);
+      max-width: 600px;
+      width: 90%;
+      position: relative;
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      background: none;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      color: #666;
+    }
+
+    .modal-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+
+    .code-container {
+      background: #f5f5f5;
+      padding: 16px;
+      border-radius: 4px;
+      margin-bottom: 16px;
+      font-family: monospace;
+      font-size: 13px;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    .copy-button {
+      padding: 8px 16px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .copy-button:hover {
+      background: #0056b3;
+    }
+
+    .copy-button.success {
+      background: #28a745;
+    }
+
+    .snapshot-info {
+      font-size: 12px;
+      color: #666;
+      margin-top: 12px;
+    }
   </style>
 </head>
 <body>
   <div id="missile-calendar"></div>
 
   <script type="text/babel">
+
+    // 1. Helper functions first
+    const generateEmbedCode = () => {
+      const currentDate = new Date().toISOString().split('T')[0].replace(/-/g, '');
+      const baseUrl = window.location.origin + window.location.pathname;
+      const embedUrl = `${baseUrl}?snapshot=${currentDate}`;
+      
+      return `<iframe 
+        src="${embedUrl}" 
+        width="100%" 
+        height="820" 
+        frameborder="0"
+        scrolling="no"
+        style="min-height: 820px; width: 100%;"
+        title="Missile Attack Calendar"
+      ></iframe>`;
+    };
+
+    const copyToClipboard = async (text) => {
+      try {
+        await navigator.clipboard.writeText(text);
+        return true;
+      } catch (err) {
+        console.error('Failed to copy text: ', err);
+        return false;
+      }
+    };
+
+    // 2. Modal Component
+    const EmbedModal = ({ onClose, copySuccess, setCopySuccess }) => {
+      const embedCode = generateEmbedCode();
+      const currentDate = new Date().toLocaleDateString('no', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+      
+      const handleCopy = async () => {
+        const success = await copyToClipboard(embedCode);
+        if (success) {
+          setCopySuccess(true);
+          setTimeout(() => setCopySuccess(false), 2000);
+        }
+      };
+
+      return (
+        <div className="modal-overlay" onClick={onClose}>
+          <div className="embed-modal" onClick={e => e.stopPropagation()}>
+            <button className="modal-close" onClick={onClose}>×</button>
+            <div className="modal-title">Embed Code for Missile Attack Calendar</div>
+            <div className="code-container">{embedCode}</div>
+            <button 
+              className={`copy-button ${copySuccess ? 'success' : ''}`}
+              onClick={handleCopy}
+            >
+              {copySuccess ? 'Copied!' : 'Copy Code'}
+            </button>
+            <div className="snapshot-info">
+              This embed code will show data snapshot from {currentDate}
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    // 3. Main Calendar Component
     const CalendarHeatmap = () => {
+      const isEmbedded = window.self !== window.top;
       const [windowWidth, setWindowWidth] = React.useState(window.innerWidth);
       const [data, setData] = React.useState(null);
       const [loading, setLoading] = React.useState(true);
       const [error, setError] = React.useState(null);
       const [filterType, setFilterType] = React.useState('Missile');
       const [selectedYear, setSelectedYear] = React.useState(2024);
+      const [showEmbedModal, setShowEmbedModal] = React.useState(false);
+      const [copySuccess, setCopySuccess] = React.useState(false);
       const MIN_YEAR = 2022;
       const MAX_YEAR = new Date().getFullYear();
 
@@ -345,12 +507,13 @@
 
       return (
         <div className="calendar-container">
-          <div className="calendar-header-text">
+         <div className="calendar-header-text">
           <div className="calendar-title">Missilangrep i rute</div>
           <div className="calendar-subtext">
             Kalenderen viser russiske missil- og droneangrep mot Ukraina fra oktober 2022 til i dag. 
               </div>
         </div>
+
           <div className="calendar-header">
             <select 
               value={filterType}
@@ -458,7 +621,22 @@
                 Det ukrainske luftforsvaret. Data samlet av Petro Ivanjuk.
               </div>
             </div>
-          </div>
+            {!isEmbedded && (
+            <button 
+              className="embed-button"
+              onClick={() => setShowEmbedModal(true)}
+            >
+              Get Embed Code
+            </button>
+          )}
+          {showEmbedModal && (
+            <EmbedModal 
+              onClose={() => setShowEmbedModal(false)}
+              copySuccess={copySuccess}
+              setCopySuccess={setCopySuccess}
+            />
+          )}
+            </div>
         </div>
       );
     };
