@@ -448,18 +448,24 @@
       const MAX_YEAR = new Date().getFullYear();
 
       // swipe for mobile start
-      const minSwipeDistance = 50;
+      const minSwipeDistance = 30;
 
       const onTouchStart = (e) => {
+        e.preventDefault();  // Add this
+        e.stopPropagation(); // Add this
         setTouchEnd(null);
         setTouchStart(e.targetTouches[0].clientX);
       };
-
+      
       const onTouchMove = (e) => {
+        e.preventDefault();  // Add this
+        e.stopPropagation(); // Add this
         setTouchEnd(e.targetTouches[0].clientX);
       };
-
-      const onTouchEnd = () => {
+      
+      const onTouchEnd = (e) => {
+        e.preventDefault();  // Add this
+        e.stopPropagation(); // Add this
         if (!touchStart || !touchEnd) return;
         
         const distance = touchStart - touchEnd;
