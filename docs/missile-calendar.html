@@ -350,7 +350,15 @@
       color: #666;
       margin-top: 12px;
     }
-  </style>
+
+    .calendar-container {
+      transition: transform 0.2s ease;
+    }
+
+    .calendar-container.swiping {
+      transform: translateX(var(--swipe-offset));
+    }
+ </style>
 </head>
 <body>
   <div id="missile-calendar"></div>
@@ -432,8 +440,38 @@
       const [selectedYear, setSelectedYear] = React.useState(2025);
       const [showEmbedModal, setShowEmbedModal] = React.useState(false);
       const [copySuccess, setCopySuccess] = React.useState(false);
+      const [touchStart, setTouchStart] = React.useState(null); //swipe for mobile
+      const [touchEnd, setTouchEnd] = React.useState(null); //swipe for mobile
       const MIN_YEAR = 2022;
       const MAX_YEAR = new Date().getFullYear();
+
+      // swipe for mobile start
+      const minSwipeDistance = 50;
+
+      const onTouchStart = (e) => {
+        setTouchEnd(null);
+        setTouchStart(e.targetTouches[0].clientX);
+      };
+
+      const onTouchMove = (e) => {
+        setTouchEnd(e.targetTouches[0].clientX);
+      };
+
+      const onTouchEnd = () => {
+        if (!touchStart || !touchEnd) return;
+        
+        const distance = touchStart - touchEnd;
+        const isLeftSwipe = distance > minSwipeDistance;
+        const isRightSwipe = distance < -minSwipeDistance;
+        
+        if (isLeftSwipe && selectedYear < MAX_YEAR) {
+          setSelectedYear(year => year + 1);
+        }
+        if (isRightSwipe && selectedYear > MIN_YEAR) {
+          setSelectedYear(year => year - 1);
+        }
+      };
+      // swipe for mobile end
 
       React.useEffect(() => {
         const handleResize = () => setWindowWidth(window.innerWidth);
@@ -508,7 +546,11 @@
       };
 
       return (
-        <div className="calendar-container">
+        <div className="calendar-container"
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+          onTouchEnd={onTouchEnd}
+        >
          <div className="calendar-header-text">
           <div className="calendar-title">Missilangrep i rute</div>
           <div className="calendar-subtext">
