@@ -177,15 +177,17 @@
       pointer-events: none;
     }
 
-    .day-square:nth-child(7n) .tooltip,
-    .day-square:nth-child(7n-1) .tooltip {
+    .day-square:nth-child(7n) .tooltip,    /* Sunday */
+    .day-square:nth-child(7n-1) .tooltip,  /* Saturday */
+    .day-square:nth-child(7n-2) .tooltip { /* Friday */
       left: auto;
       right: 0;
       transform: none;
     }
-
-    .day-square:nth-child(7n-6) .tooltip,
-    .day-square:nth-child(7n-5) .tooltip {
+    
+    .day-square:nth-child(7n-6) .tooltip,  /* Monday */
+    .day-square:nth-child(7n-5) .tooltip,  /* Tuesday */
+    .day-square:nth-child(7n-4) .tooltip { /* Wednesday */
       left: 0;
       transform: none;
     }
