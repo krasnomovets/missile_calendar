@@ -451,34 +451,34 @@
       const minSwipeDistance = 30;
 
       const onTouchStart = (e) => {
-        e.preventDefault();  // Add this
-        e.stopPropagation(); // Add this
-        setTouchEnd(null);
-        setTouchStart(e.targetTouches[0].clientX);
-      };
+  // Only track the touch start position without preventing default behavior
+      setTouchEnd(null);
+      setTouchStart(e.targetTouches[0].clientX);
+    };
+    
+    const onTouchMove = (e) => {
+      // Only track the touch movement without preventing default behavior
+      setTouchEnd(e.targetTouches[0].clientX);
+    };
+    
+    const onTouchEnd = (e) => {
+      if (!touchStart || !touchEnd) return;
       
-      const onTouchMove = (e) => {
-        e.preventDefault();  // Add this
-        e.stopPropagation(); // Add this
-        setTouchEnd(e.targetTouches[0].clientX);
-      };
+      const distance = touchStart - touchEnd;
+      const isLeftSwipe = distance > minSwipeDistance;
+      const isRightSwipe = distance < -minSwipeDistance;
       
-      const onTouchEnd = (e) => {
-        e.preventDefault();  // Add this
-        e.stopPropagation(); // Add this
-        if (!touchStart || !touchEnd) return;
-        
-        const distance = touchStart - touchEnd;
-        const isLeftSwipe = distance > minSwipeDistance;
-        const isRightSwipe = distance < -minSwipeDistance;
-        
-        if (isLeftSwipe && selectedYear < MAX_YEAR) {
-          setSelectedYear(year => year + 1);
-        }
-        if (isRightSwipe && selectedYear > MIN_YEAR) {
-          setSelectedYear(year => year - 1);
-        }
-      };
+      // Only handle year changes on clear swipes
+      if (isLeftSwipe && selectedYear < MAX_YEAR) {
+        e.preventDefault(); // Only prevent default when handling a swipe
+        setSelectedYear(year => year + 1);
+      }
+      if (isRightSwipe && selectedYear > MIN_YEAR) {
+        e.preventDefault(); // Only prevent default when handling a swipe
+        setSelectedYear(year => year - 1);
+      }
+      // If it's not a swipe (just a tap), let the default behavior happen
+    };
       // swipe for mobile end
 
       React.useEffect(() => {
